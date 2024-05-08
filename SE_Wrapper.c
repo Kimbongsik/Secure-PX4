@@ -7,6 +7,7 @@
 #include "SE_Wrapper.h"
 
 
+
 /*
 //ISOISO7816-3
 
@@ -15,17 +16,6 @@ BYTE R_APDU[MAX_C_APDU_SIZE]; // Array reserved for response APDU
 
 */
 
-
-int Run() {
-	
-	Generate_AES128Key(0x20);
-}
-
-/*=================================================
- int Generate_AES128Key
- : SE 내의 AES128 Key 생성 및 NVM 내 저장
- : key_num = Key Reference (Maximum: 0x20)
-=================================================*/
 int Generate_AES128Key(int key_num) {
 
 	/*C_APDU[APDU_CLA] = 0x80;
@@ -38,12 +28,6 @@ int Generate_AES128Key(int key_num) {
 	return FALSE;*/
 }
 
-/*=================================================
- int Encrypt_AES128
- : SE 내 저장된 AES128 Key로 plain_data 암호화
- : key_num = Key Reference (Maximum: 0x20)
- : enc_data : SE에서 암호화된 데이터 저장 공간
-=================================================*/
 int Encrypt_AES128(int key_num, BYTE* plain_data, int plain_len, BYTE* enc_data, int* enc_len) {
 	/*C_APDU[APDU_CLA] = 0x80;
 	C_APDU[APDU_INS] = 0x81;
@@ -57,13 +41,7 @@ int Encrypt_AES128(int key_num, BYTE* plain_data, int plain_len, BYTE* enc_data,
 	return FALSE;*/
 }
 
-/*=================================================
- int Decrypt_AES128
- : SE 내 저장된 AES128 Key로 enc_data 복호화
- : key_num = Key Reference (Maximum: 0x20)
- : plain_data : SE에서 복호화된 데이터 저장 공간
-=================================================*/
-int Decrypt_AES128(int key_num, BYTE* enc_data, int enc_len, BYTE* plain_data, int* plain_len) {
+mc_err Decrypt_AES128(int key_num, BYTE* enc_data, int enc_len, BYTE* plain_data, int* plain_len) {
 	/*C_APDU[APDU_CLA] = 0x80;
 	C_APDU[APDU_INS] = 0x82;
 	C_APDU[APDU_P1] = 0x00;
@@ -76,13 +54,19 @@ int Decrypt_AES128(int key_num, BYTE* enc_data, int enc_len, BYTE* plain_data, i
 	return FALSE;*/
 }
 
-/*=================================================
-int Sign_RSA1024
-: SE 내의 RSA1024 public_key로 plain_data 암호화
-: key_num = Key Reference (Maximum: 0x20)
-: 암호화된 데이터는 enc_data에 저장
-=================================================*/
-int Sign_RSA1024(int key_num, BYTE* plain_data, int plain_len, BYTE* enc_data, int* enc_len) {
+mc_err Generate_RSA1024Key(int key_num) {
+	//C_APDU[APDU_CLA] = 0x80;            // CLA - Class
+	//C_APDU[APDU_INS] = 0x88;            // INS - Instruction: Generate RSA Key Pair
+	//C_APDU[APDU_P1] = 0x06;            // P1 - Parameter 1
+	//C_APDU[APDU_P2] = (BYTE)key_num;    // P2 - Parameter 2
+	//C_APDU[APDU_LC] = 0x00;             // Lc - no data for CRT key or 1 byte for non-CRT
+	////C_APDU[APDU_DATA] = 0x01;           // Data absent - CRT, data present - non-CRT
+
+	//if (iso7816.TransmitAPDU(C_APDU, 5, NULL, NULL) && SW1SW2 == 0x9000) return TRUE;
+	//return FALSE;
+}
+
+mc_err Sign_RSA1024(int key_num, BYTE* plain_data, int plain_len, BYTE* sign_data, int* sign_len) {
 
 	//C_APDU[APDU_CLA] = 0x80; // Command
 	//C_APDU[APDU_INS] = 0x8B; // Instruction code (RSA_SIGN)
@@ -97,13 +81,7 @@ int Sign_RSA1024(int key_num, BYTE* plain_data, int plain_len, BYTE* enc_data, i
 	//return FALSE;
 }
 
-/*=================================================
-int Verify_RSA1024
-: SE 내의 RSA1024 public_key로 plain_data 암호화
-: key_num = Key Reference (Maximum: 0x20)
-: 암호화된 데이터는 enc_data에 저장
-=================================================*/
-int Verify_RSA1024(int key_num, BYTE* plain_data, int plain_len, BYTE* enc_data, int* enc_len) {
+mc_err Verify_RSA1024(int key_num, BYTE* sign_data, int sign_len, BYTE* plain_data, int* plain_len) {
 
 	//C_APDU[APDU_CLA] = 0x90;
 	//C_APDU[APDU_INS] = 0x8C;
@@ -125,8 +103,7 @@ int Verify_RSA1024(int key_num, BYTE* plain_data, int plain_len, BYTE* enc_data,
 	//else return FALSE;
 }
 
-// Public Key Load
-int PublicKey_Load_RSA1024(int key_idx)
+mc_err PublicKey_Load_RSA1024(int key_idx, int* loaded_key)
 {
 	//TODO
 }
