@@ -10,7 +10,7 @@
 
 RSA* key_store[0x21]; // 최대 0x20 (32개) 키 저장
 
-mc_err Generate_AES128Key(int key_num) {
+mc_err Generate_AES128Key(BYTE* key, BYTE* iv, int key_size, int iv_size) {
 	//Generate AES key
 	if(RAND_bytes(key, key_size) != 1)
 		return MC_ERR_KEY_GEN;
@@ -22,7 +22,7 @@ mc_err Generate_AES128Key(int key_num) {
 	return MC_ERR_OK;
 }
 
-mc_err Encrypt_AES128(int key_num, BYTE* plain_data, int plain_len, BYTE* enc_data, int* enc_len) {
+mc_err Encrypt_AES128(BYTE* key, BYTE* plain_data, int plain_len, BYTE* enc_data, BYTE* iv) {
 	EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
 	int len, enc_len;
 
@@ -48,7 +48,7 @@ mc_err Encrypt_AES128(int key_num, BYTE* plain_data, int plain_len, BYTE* enc_da
 	return MC_ERR_OK;
 }
 
-mc_err Decrypt_AES128(int key_num, BYTE* enc_data, int enc_len, BYTE* plain_data, int* plain_len) {
+mc_err Decrypt_AES128(BYTE* key, BYTE* enc_data, int enc_len, BYTE* plain_data, BYTE* iv) {
 	EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
 	int len, plain_len;
 
