@@ -1,76 +1,92 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//#include "ISO7816.h"
-//#include "Script_bin.h"
+#include <openssl/bn.h>
+#include <openssl/rsa.h>
+#include <openssl/evp.h>
+#include <openssl/rand.h>
 
 #include "SE_Wrapper.h"
 
-#include <openssl/rsa.h>
-#include <openssl/bn.h>
-RSA* key_store[0x21]; // ÃÖ´ë 0x20 (32°³) Å° ÀúÀå
+RSA* key_store[0x21]; // ìµœëŒ€ 0x20 (32ê°œ) í‚¤ ì €ì¥
 
+mc_err Generate_AES128Key(int key_num) {
+	//Generate AES key
+	if(RAND_bytes(key, key_size) != 1)
+		return MC_ERR_KEY_GEN;
 
+	//Generate AES iv
+	if(RAND_bytes(iv, iv_size) != 1)
+		return MC_ERR_KEY_GEN;
 
-/*
-//ISOISO7816-3
-
-BYTE C_APDU[MAX_C_APDU_SIZE]; // Array reserved for Command APDU
-BYTE R_APDU[MAX_C_APDU_SIZE]; // Array reserved for response APDU
-
-*/
-
-int Generate_AES128Key(int key_num) {
-
-	/*C_APDU[APDU_CLA] = 0x80;
-	C_APDU[APDU_INS] = 0x84;
-	C_APDU[APDU_P1] = 0x09;
-	C_APDU[APDU_P2] = (BYTE)key_num;
-	C_APDU[APDU_LC] = 0x00;
-
-	if (iso7816.TransmitAPDU(C_APDU, 5, NULL, NULL) && SW1SW2 == 0x9000) return TRUE;
-	return FALSE;*/
+	return MC_ERR_OK;
 }
 
-int Encrypt_AES128(int key_num, BYTE* plain_data, int plain_len, BYTE* enc_data, int* enc_len) {
-	/*C_APDU[APDU_CLA] = 0x80;
-	C_APDU[APDU_INS] = 0x81;
-	C_APDU[APDU_P1] = 0x00;
-	C_APDU[APDU_P2] = (BYTE)key_num;
-	C_APDU[APDU_LC] = (BYTE)plain_len;
+mc_err Encrypt_AES128(int key_num, BYTE* plain_data, int plain_len, BYTE* enc_data, int* enc_len) {
+	EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+	int len, enc_len;
 
-	memcpy(C_APDU + APDU_DATA, plain_data, plain_len);
+	if(!ctx)
+		return MC_ERR_ENCRYPT;
+	
+	//Initialise AES encryption(AES-CTR).
+	if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_128_ctr(), NULL, key, iv))
+		return MC_ERR_ENCRYPT;
 
-	if (iso7816.TransmitAPDU(C_APDU, plain_len + 5, enc_data, enc_len) && SW1SW2 == 0x9000) return TRUE;
-	return FALSE;*/
+	//Encrypt data and update
+	if(1 != EVP_EncryptUpdate(ctx, enc_data, &len, plain_data, plain_len))
+		return MC_ERR_ENCRYPT;
+	enc_len = len;
+
+	//Finalize encryption
+	if(1 != EVP_EncryptFinal_ex(ctx, enc_data + len, &len))
+		return MC_ERR_ENCRYPT;
+	enc_len += len;
+	memcpy(plain_data, enc_data, enc_len);
+
+	EVP_CIPHER_CTX_free(ctx);
+	return MC_ERR_OK;
 }
 
 mc_err Decrypt_AES128(int key_num, BYTE* enc_data, int enc_len, BYTE* plain_data, int* plain_len) {
-	/*C_APDU[APDU_CLA] = 0x80;
-	C_APDU[APDU_INS] = 0x82;
-	C_APDU[APDU_P1] = 0x00;
-	C_APDU[APDU_P2] = (BYTE)key_num;
-	C_APDU[APDU_LC] = (BYTE)enc_len;
+	EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+	int len, plain_len;
 
-	memcpy(C_APDU + APDU_DATA, enc_data, enc_len);
+	if(!ctx)
+		return MC_ERR_DECRYPT;
 
-	if (iso7816.TransmitAPDU(C_APDU, enc_len + 5, plain_data, plain_len) && SW1SW2 == 0x9000) return TRUE;
-	return FALSE;*/
+	//Initialise AES decryption(AES-CTR).
+	if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_128_ctr(), NULL, key, iv))
+		return MC_ERR_DECRYPT;
+
+	//Decrypt data and update
+	if (1 != EVP_DecryptUpdate(ctx, plain_data, &len, enc_data, enc_len))
+		return MC_ERR_DECRYPT;
+	plain_len = len;
+
+	//Finalize encryption
+	if (1 != EVP_DecryptFinal_ex(ctx, plain_data + len, &len))
+		return MC_ERR_DECRYPT;
+	plain_len += len;
+	memcpy(enc_data, plain_data, plain_len);
+
+	EVP_CIPHER_CTX_free(ctx);
+	return MC_ERR_OK;
 }
 
 mc_err Generate_RSA1024Key(int key_num) {
-	// key_numÀÌ À¯È¿ÇÑÁö È®ÀÎ
+	// key_numì´ ìœ íš¨í•œì§€ í™•ì¸
 	if (key_num < 0 || key_num > 0x20) {
 		return MC_ERR_KEY_GEN;
 	}
 
-	// RSA Å°¸¦ ÀúÀåÇÒ ±¸Á¶Ã¼ »ı¼º
+	// RSA í‚¤ë¥¼ ì €ì¥í•  êµ¬ì¡°ì²´ ìƒì„±
 	RSA* rsa = RSA_new();
 	if (rsa == NULL) {
 		return MC_ERR_KEY_GEN;
 	}
 
-	// °ø°³ Áö¼ö ¼³Á¤ (ÀÏ¹İÀûÀ¸·Î 65537 »ç¿ë)
+	// ê³µê°œ ì§€ìˆ˜ ì„¤ì • (ì¼ë°˜ì ìœ¼ë¡œ 65537 ì‚¬ìš©)
 	BIGNUM* e_value = BN_new();
 	if (e_value == NULL) {
 		RSA_free(rsa);
@@ -78,10 +94,10 @@ mc_err Generate_RSA1024Key(int key_num) {
 	}
 	BN_set_word(e_value, RSA_F4);
 
-	// RSA Å° »ı¼º
+	// RSA í‚¤ ìƒì„±
 	int ret = RSA_generate_key_ex(rsa, 1024, e_value, NULL);
 
-	// BIGNUM ±¸Á¶Ã¼ ÇØÁ¦
+	// BIGNUM êµ¬ì¡°ì²´ í•´ì œ
 	BN_free(e_value);
 
 	if (ret != 1) {
@@ -89,40 +105,40 @@ mc_err Generate_RSA1024Key(int key_num) {
 		return MC_ERR_KEY_GEN;
 	}
 
-	// »ı¼ºµÈ Å°¸¦ key_store¿¡ ÀúÀå
+	// ìƒì„±ëœ í‚¤ë¥¼ key_storeì— ì €ì¥
 	key_store[key_num] = rsa;
 
 	return MC_ERR_OK;
 }
 
 mc_err Sign_RSA1024(int key_num, BYTE* plain_data, int plain_len, BYTE* sign_data, int* sign_len) {
-	// key_numÀÌ À¯È¿ÇÑÁö È®ÀÎ
+	// key_numì´ ìœ íš¨í•œì§€ í™•ì¸
 	if (key_num < 0 || key_num > 0x20 || key_store[key_num] == NULL) {
 		return MC_ERR_KEY_LOAD;
 	}
 
-	// RSA °³ÀÎ Å° ÃßÃâ
+	// RSA ê°œì¸ í‚¤ ì¶”ì¶œ
 	RSA* rsa_private_key = key_store[key_num];
 
-	// ¼­¸íÇÒ µ¥ÀÌÅÍ ÁØºñ
+	// ì„œëª…í•  ë°ì´í„° ì¤€ë¹„
 	unsigned char* digest = (unsigned char*)malloc(RSA_size(rsa_private_key));
 	if (digest == NULL) {
 		return MC_ERR_ENCRYPT;
 	}
 
-	// ÇØ½Ã °è»ê (SHA-256 »ç¿ë)
+	// í•´ì‹œ ê³„ì‚° (SHA-256 ì‚¬ìš©)
 	unsigned int digest_len;
 	EVP_MD_CTX* ctx = EVP_MD_CTX_new();
 	if (ctx == NULL) {
 		free(digest);
 		return MC_ERR_ENCRYPT;
 	}
-	EVP_DigestInit_ex(ctx, EVP_sha256(), NULL); // SHA-256 »ç¿ë
+	EVP_DigestInit_ex(ctx, EVP_sha256(), NULL); // SHA-256 ì‚¬ìš©
 	EVP_DigestUpdate(ctx, plain_data, plain_len);
 	EVP_DigestFinal_ex(ctx, digest, &digest_len);
 	EVP_MD_CTX_free(ctx);
 
-	// RSA ¼­¸í
+	// RSA ì„œëª…
 	int result = RSA_private_encrypt(digest_len, digest, sign_data, rsa_private_key, RSA_PKCS1_PADDING);
 	free(digest);
 
@@ -136,34 +152,34 @@ mc_err Sign_RSA1024(int key_num, BYTE* plain_data, int plain_len, BYTE* sign_dat
 }
 
 mc_err Verify_RSA1024(int key_num, BYTE* sign_data, int sign_len, BYTE* plain_data, int* plain_len) {
-	// key_numÀÌ À¯È¿ÇÑÁö È®ÀÎ
+	// key_numì´ ìœ íš¨í•œì§€ í™•ì¸
 	if (key_num < 0 || key_num > 0x20 || key_store[key_num] == NULL) {
 		return MC_ERR_KEY_LOAD;
 	}
 
-	// RSA °ø°³ Å° ÃßÃâ
+	// RSA ê³µê°œ í‚¤ ì¶”ì¶œ
 	RSA* rsa_public_key = key_store[key_num];
 
-	// ¼­¸í °ËÁõ
+	// ì„œëª… ê²€ì¦
 	int result = RSA_public_decrypt(sign_len, sign_data, plain_data, rsa_public_key, RSA_PKCS1_PADDING);
 
 	if (result == -1) {
-		return MC_ERR_DECRYPT; // ¼­¸í °ËÁõ ½ÇÆĞ
+		return MC_ERR_DECRYPT; // ì„œëª… ê²€ì¦ ì‹¤íŒ¨
 	}
 
 	*plain_len = result;
 
-	return MC_ERR_OK; // ¼­¸í °ËÁõ ¼º°ø
+	return MC_ERR_OK; // ì„œëª… ê²€ì¦ ì„±ê³µ
 }
 
 mc_err PublicKey_Load_RSA1024(int key_idx, int* loaded_key)
 {
-	// key_idx°¡ À¯È¿ÇÑÁö È®ÀÎ
+	// key_idxê°€ ìœ íš¨í•œì§€ í™•ì¸
 	if (key_idx < 0 || key_idx > 0x20 || key_store[key_idx] == NULL) {
 		return MC_ERR_KEY_LOAD;
 	}
 
-	// RSA ±¸Á¶Ã¼¿¡¼­ e, n ÃßÃâ (°ø°³ Å° ¿ä¼Ò¸¸ »ç¿ë)
+	// RSA êµ¬ì¡°ì²´ì—ì„œ e, n ì¶”ì¶œ (ê³µê°œ í‚¤ ìš”ì†Œë§Œ ì‚¬ìš©)
 	const BIGNUM* rsa_e = NULL;
 	const BIGNUM* rsa_n = NULL;
 	RSA_get0_key(key_store[key_idx], &rsa_n, &rsa_e, NULL);
@@ -172,15 +188,15 @@ mc_err PublicKey_Load_RSA1024(int key_idx, int* loaded_key)
 		return MC_ERR_KEY_LOAD;
 	}
 
-	// BIGNUMÀ» int ¹è¿­·Î º¯È¯ÇÏ¿© ÀúÀåÇÒ ¼ö ÀÖ´Â ÃÖ´ë Å©±â °è»ê
+	// BIGNUMì„ int ë°°ì—´ë¡œ ë³€í™˜í•˜ì—¬ ì €ì¥í•  ìˆ˜ ìˆëŠ” ìµœëŒ€ í¬ê¸° ê³„ì‚°
 	int max_size = BN_num_bytes(rsa_n) + BN_num_bytes(rsa_e);
 
-	// loaded_key ¹è¿­ÀÇ Å©±â°¡ ÃæºĞÇÑÁö È®ÀÎÇÏ°í ºÎÁ·ÇÒ °æ¿ì ¿À·ù ¹İÈ¯
+	// loaded_key ë°°ì—´ì˜ í¬ê¸°ê°€ ì¶©ë¶„í•œì§€ í™•ì¸í•˜ê³  ë¶€ì¡±í•  ê²½ìš° ì˜¤ë¥˜ ë°˜í™˜
 	if (max_size > sizeof(loaded_key)) {
 		return MC_ERR_KEY_LOAD;
 	}
 
-	// BIGNUMÀ» int ¹è¿­·Î º¯È¯ÇÏ¿© ÀúÀå
+	// BIGNUMì„ int ë°°ì—´ë¡œ ë³€í™˜í•˜ì—¬ ì €ì¥
 	BN_bn2bin(rsa_n, (unsigned char*)loaded_key);
 	BN_bn2bin(rsa_e, (unsigned char*)(loaded_key + BN_num_bytes(rsa_n)));
 
