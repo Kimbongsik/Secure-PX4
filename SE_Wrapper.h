@@ -3,87 +3,87 @@ typedef unsigned char BYTE;
 // All type of errors encountered by MESL_CRYPTO API
 typedef enum mc_err {
 
-	MC_ERR_OK = 0, // No Error. Á¤»ó
-	MC_ERR_KEY_GEN, // Å° »ı¼º ½ÇÆĞ ¿À·ù
-	MC_ERR_ENCRYPT, // ¾ÏÈ£È­ ½ÇÆĞ ¿À·ù
-	MC_ERR_DECRYPT, // º¹È£È­ ½ÇÆĞ ¿À·ù
-	MC_ERR_KEY_LOAD // Å° ·Îµå ½ÇÆĞ ¿À·ù
+	MC_ERR_OK = 0, // No Error. ì •ìƒ
+	MC_ERR_KEY_GEN, // í‚¤ ìƒì„± ì‹¤íŒ¨ ì˜¤ë¥˜
+	MC_ERR_ENCRYPT, // ì•”í˜¸í™” ì‹¤íŒ¨ ì˜¤ë¥˜
+	MC_ERR_DECRYPT, // ë³µí˜¸í™” ì‹¤íŒ¨ ì˜¤ë¥˜
+	MC_ERR_KEY_LOAD // í‚¤ ë¡œë“œ ì‹¤íŒ¨ ì˜¤ë¥˜
 
 } mc_err;
 
 /*
- SE ³»ÀÇ AES128 Key »ı¼º ¹× NVM ³» ÀúÀå
+ SE ë‚´ì˜ AES128 Key ìƒì„± ë° NVM ë‚´ ì €ì¥
 
  @key_num: Key Reference (Maximum: 0x20)
 
- @return MC_ERR_OK (¼º°ø ½Ã), or ¿¡·¯ Å¸ÀÔ ¹İÈ¯(mc_err ÂüÁ¶)
+ @return MC_ERR_OK (ì„±ê³µ ì‹œ), or ì—ëŸ¬ íƒ€ì… ë°˜í™˜(mc_err ì°¸ì¡°)
 */
-mc_err Generate_AES128Key(int key_num);
+mc_err Generate_AES128Key(BYTE* key, BYTE* iv, int key_size, int iv_size);
 
 /*
- SE ³» ÀúÀåµÈ AES128 Key·Î plain_data ¾ÏÈ£È­
+ SE ë‚´ ì €ì¥ëœ AES128 Keyë¡œ plain_data ì•”í˜¸í™”
  
  @key_num: Key Reference(Maximum : 0x20)
- @plain_data: ¾ÏÈ£È­¸¦ ¼öÇàÇÒ ´ë»ó plain data
- @plain_len: plain_dataÀÇ ±æÀÌ(Å©±â)
- @enc_data: ¾ÏÈ£È­µÈ µ¥ÀÌÅÍ¸¦ ÀúÀå
- @enc_len: enc_data Å©±â (16ÀÇ ¹è¼ö)
+ @plain_data: ì•”í˜¸í™”ë¥¼ ìˆ˜í–‰í•  ëŒ€ìƒ plain data
+ @plain_len: plain_dataì˜ ê¸¸ì´(í¬ê¸°)
+ @enc_data: ì•”í˜¸í™”ëœ ë°ì´í„°ë¥¼ ì €ì¥
+ @enc_len: enc_data í¬ê¸° (16ì˜ ë°°ìˆ˜)
 
- @return MC_ERR_OK (¼º°ø ½Ã), or ¿¡·¯ Å¸ÀÔ ¹İÈ¯(mc_err ÂüÁ¶)
+ @return MC_ERR_OK (ì„±ê³µ ì‹œ), or ì—ëŸ¬ íƒ€ì… ë°˜í™˜(mc_err ì°¸ì¡°)
 */
-mc_err Encrypt_AES128(int key_num, BYTE* plain_data, int plain_len, BYTE* enc_data, int* enc_len);
+mc_err Encrypt_AES128(BYTE* key, BYTE* plain_data, int plain_len, BYTE* enc_data, BYTE* iv);
 
 /*
- SE ³» ÀúÀåµÈ AES128 Key·Î enc_data º¹È£È­
+ SE ë‚´ ì €ì¥ëœ AES128 Keyë¡œ enc_data ë³µí˜¸í™”
  
  @key_num: Key Reference (Maximum: 0x20)
- @enc_data: º¹È£È­¸¦ ¼öÇàÇÒ ´ë»óÀÎ encrypted data
- @enc_len: enc_data Å©±â (16ÀÇ ¹è¼ö)
- @plain_data: SE¿¡¼­ º¹È£È­µÈ µ¥ÀÌÅÍ¸¦ ÀúÀåÇÏ´Â °ø°£
- @plain_len: plain data Å©±â
+ @enc_data: ë³µí˜¸í™”ë¥¼ ìˆ˜í–‰í•  ëŒ€ìƒì¸ encrypted data
+ @enc_len: enc_data í¬ê¸° (16ì˜ ë°°ìˆ˜)
+ @plain_data: SEì—ì„œ ë³µí˜¸í™”ëœ ë°ì´í„°ë¥¼ ì €ì¥í•˜ëŠ” ê³µê°„
+ @plain_len: plain data í¬ê¸°
 
- @return MC_ERR_OK (¼º°ø ½Ã), or ¿¡·¯ Å¸ÀÔ ¹İÈ¯(mc_err ÂüÁ¶)
+ @return MC_ERR_OK (ì„±ê³µ ì‹œ), or ì—ëŸ¬ íƒ€ì… ë°˜í™˜(mc_err ì°¸ì¡°)
 */
-mc_err Decrypt_AES128(int key_num, BYTE* enc_data, int enc_len, BYTE* plain_data, int* plain_len);
+mc_err Decrypt_AES128(BYTE* key, BYTE* enc_data, int enc_len, BYTE* plain_data, BYTE* iv);
 
 /*
- SE ³»ÀÇ RSA1024 Key½Ö »ı¼º ¹× NVM ³» ÀúÀå
+ SE ë‚´ì˜ RSA1024 KeyìŒ ìƒì„± ë° NVM ë‚´ ì €ì¥
 
  @key_num: Key Reference (Maximum: 0x20)
 
- @return MC_ERR_OK (¼º°ø ½Ã), or ¿¡·¯ Å¸ÀÔ ¹İÈ¯(mc_err ÂüÁ¶)
+ @return MC_ERR_OK (ì„±ê³µ ì‹œ), or ì—ëŸ¬ íƒ€ì… ë°˜í™˜(mc_err ì°¸ì¡°)
 */
 mc_err Generate_RSA1024Key(int key_num);
 
 /*
- SE ³»ÀÇ RSA1024·Î signing
+ SE ë‚´ì˜ RSA1024ë¡œ signing
  
  @key_num = Key Reference (Maximum: 0x20)
  @plain_data: plain data
- @plain_len: plain_dataÀÇ ±æÀÌ(Å©±â)
- @sign_data: »çÀÎ µ¥ÀÌÅÍ¸¦ ÀúÀå
- @sign_len: sign_data Å©±â (128ÀÇ ¹è¼ö)
+ @plain_len: plain_dataì˜ ê¸¸ì´(í¬ê¸°)
+ @sign_data: ì‚¬ì¸ ë°ì´í„°ë¥¼ ì €ì¥
+ @sign_len: sign_data í¬ê¸° (128ì˜ ë°°ìˆ˜)
 
- @return MC_ERR_OK (¼º°ø ½Ã), or ¿¡·¯ Å¸ÀÔ ¹İÈ¯(mc_err ÂüÁ¶)
+ @return MC_ERR_OK (ì„±ê³µ ì‹œ), or ì—ëŸ¬ íƒ€ì… ë°˜í™˜(mc_err ì°¸ì¡°)
 */
 mc_err Sign_RSA1024(int key_num, BYTE* plain_data, int plain_len, BYTE* sign_data, int* sign_len);
 
 /*
- SE ³»ÀÇ RSA1024 Verification
+ SE ë‚´ì˜ RSA1024 Verification
 
 :@key_num = Key Reference (Maximum: 0x20)
- @sign_data: »çÀÎ µ¥ÀÌÅÍ
- @sign_len: sign_data Å©±â (16ÀÇ ¹è¼ö)
+ @sign_data: ì‚¬ì¸ ë°ì´í„°
+ @sign_len: sign_data í¬ê¸° (16ì˜ ë°°ìˆ˜)
  @plain_data: plain data (original data)
- @plain_len: plain data Å©±â
+ @plain_len: plain data í¬ê¸°
 
-  @return MC_ERR_OK (¼º°ø ½Ã), or ¿¡·¯ Å¸ÀÔ ¹İÈ¯(mc_err ÂüÁ¶)
+  @return MC_ERR_OK (ì„±ê³µ ì‹œ), or ì—ëŸ¬ íƒ€ì… ë°˜í™˜(mc_err ì°¸ì¡°)
 */
 mc_err Verify_RSA1024(int key_num, BYTE* sign_data, int sign_len, BYTE* plain_data, int* plain_len);
 
 /*
- Public Key ·Îµå (°ËÁõ ½Ã »ç¿ë)
+ Public Key ë¡œë“œ (ê²€ì¦ ì‹œ ì‚¬ìš©)
  @key_idx: public key index
- @loaded_key: public key¸¦ ÀúÀå
+ @loaded_key: public keyë¥¼ ì €ì¥
 */
 mc_err PublicKey_Load_RSA1024(int key_idx, int* loaded_key);
